@@ -231,7 +231,7 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
         </div>
       )}
       <h3 className="text-2xl font-bold text-purple-600 mb-2">{title}</h3>
-      <p className="text-lg text-gray-700 mb-6 font-semibold">Match the 4 jobs on top with the 4 on bottom!</p>
+      <p className="text-lg text-gray-700 mb-6 font-semibold">Find and match the pairs that belong together!</p>
       
       <div className="flex-1 flex flex-col justify-between">
         <div className="grid grid-cols-4 gap-4 mb-8 pb-8 border-b-4 border-purple-200">
