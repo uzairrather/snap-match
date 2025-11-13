@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GameCard from './GameCard';
 import GameStats from './GameStats';
 
 const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
+  // Preload all images on component mount
+  useEffect(() => {
+    gameData.forEach((item) => {
+      const profImg = new Image();
+      profImg.src = item.professionImage;
+      const toolImg = new Image();
+      toolImg.src = item.toolImage;
+    });
+  }, []);
   const gameData = [
     { id: 1, profession: 'Chef', tool: 'Cooking Tools', professionImage: "/assets/images/chef_-1762802898157.PNG", professionImageAlt: 'Professional chef in white uniform and hat', toolImage: "/assets/images/chef_tools_-1762802929614.PNG", toolImageAlt: 'Collection of cooking tools' },
     { id: 2, profession: 'Nurse', tool: 'Medical Tools', professionImage: "/assets/images/nurse_-1762802027464.PNG", professionImageAlt: 'Nurse wearing scrubs and mask', toolImage: "/assets/images/nurse_tools_-1762802131970.PNG", toolImageAlt: 'Medical tools and equipment' },
@@ -23,29 +32,45 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
     return newArray;
   };
 
+  // FIX: Create SNAP cards with top and bottom separated
   const createSnapCards = (ids) => {
-    const cards = [];
+    const topCards = [];
+    const bottomCards = [];
+
     ids.forEach((id) => {
       const item = gameData.find(d => d.id === id);
-      for (let i = 0; i < 2; i++) {
-        cards.push({
-          id: `profession-${item.id}-${i}`,
-          type: 'profession',
-          content: item.profession,
-          image: item.professionImage,
-          imageAlt: item.professionImageAlt,
-          matchId: item.id
-        });
-      }
+      // First copy goes to top
+      topCards.push({
+        id: `profession-${item.id}-top`,
+        type: 'profession',
+        content: item.profession,
+        image: item.professionImage,
+        imageAlt: item.professionImageAlt,
+        matchId: item.id
+      });
+      // Second copy goes to bottom
+      bottomCards.push({
+        id: `profession-${item.id}-bottom`,
+        type: 'profession',
+        content: item.profession,
+        image: item.professionImage,
+        imageAlt: item.professionImageAlt,
+        matchId: item.id
+      });
     });
-    return shuffleArray(cards);
+
+    return {
+      top: shuffleArray(topCards),
+      bottom: shuffleArray(bottomCards)
+    };
   };
 
   const createMatchCards = (ids) => {
-    const cards = [];
+    const professions = [];
+    const tools = [];
     ids.forEach((id) => {
       const item = gameData.find(d => d.id === id);
-      cards.push({
+      professions.push({
         id: `profession-${item.id}`,
         type: 'profession',
         content: item.profession,
@@ -53,7 +78,7 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
         imageAlt: item.professionImageAlt,
         matchId: item.id
       });
-      cards.push({
+      tools.push({
         id: `tool-${item.id}`,
         type: 'tool',
         content: item.tool,
@@ -62,19 +87,49 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
         matchId: item.id
       });
     });
-    return shuffleArray(cards);
+    return {
+      top: shuffleArray(professions),
+      bottom: shuffleArray(tools)
+    };
   };
 
-  const [mission1, setMission1] = useState(() => ({ cards: createSnapCards([1, 2, 3, 4]), flipped: [], matched: [], complete: false }));
-  const [mission2, setMission2] = useState(() => ({ cards: createSnapCards([5, 6, 7, 8]), flipped: [], matched: [], complete: false }));
-  const [mission3, setMission3] = useState(() => ({ cards: createMatchCards([1, 2, 3, 4]), flipped: [], matched: [], complete: false }));
-  const [mission4, setMission4] = useState(() => ({ cards: createMatchCards([5, 6, 7, 8]), flipped: [], matched: [], complete: false }));
+  const [mission1, setMission1] = useState(() => ({ snapCards: createSnapCards([1, 2, 3, 4]), flipped: [], matched: [], complete: false }));
+  const [mission2, setMission2] = useState(() => ({ snapCards: createSnapCards([5, 6, 7, 8]), flipped: [], matched: [], complete: false }));
+  const [mission3, setMission3] = useState(() => ({ matchCards: createMatchCards([1, 2, 3, 4]), flipped: [], matched: [], complete: false }));
+  const [mission4, setMission4] = useState(() => ({ matchCards: createMatchCards([5, 6, 7, 8]), flipped: [], matched: [], complete: false }));
 
   const [isChecking, setIsChecking] = useState(false);
   const [feedback, setFeedback] = useState({ show: false });
   const [celebration, setCelebration] = useState({ show: false, missionId: null, message: '' });
   const [allComplete, setAllComplete] = useState(false);
   const [attempts, setAttempts] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  // Preload images and track loading
+  useEffect(() => {
+    let loadedCount = 0;
+    let totalImages = gameData.length * 2;
+
+    gameData.forEach((item) => {
+      const profImg = new Image();
+      profImg.onload = () => {
+        loadedCount++;
+        if (loadedCount === totalImages) setImagesLoaded(true);
+      };
+      profImg.src = item.professionImage;
+
+      const toolImg = new Image();
+      toolImg.onload = () => {
+        loadedCount++;
+        if (loadedCount === totalImages) setImagesLoaded(true);
+      };
+      toolImg.src = item.toolImage;
+    });
+
+    // Fallback: if images don't load after 3 seconds, show game anyway
+    const timeout = setTimeout(() => setImagesLoaded(true), 3000);
+    return () => clearTimeout(timeout);
+  }, []);
 
   const handleMissionCardClick = (cardId, missionState, setMissionState, missionId, expectedPairs, isSNAP) => {
     if (isChecking || missionState.flipped.includes(cardId) || missionState.matched.some(p => p.includes(cardId))) return;
@@ -88,8 +143,18 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
 
       setTimeout(() => {
         const [firstId, secondId] = newFlipped;
-        const firstCard = missionState.cards.find(c => c.id === firstId);
-        const secondCard = missionState.cards.find(c => c.id === secondId);
+        
+        // Get card based on mission type
+        let firstCard, secondCard;
+        if (isSNAP) {
+          const allSnapCards = [...missionState.snapCards.top, ...missionState.snapCards.bottom];
+          firstCard = allSnapCards.find(c => c.id === firstId);
+          secondCard = allSnapCards.find(c => c.id === secondId);
+        } else {
+          const allMatchCards = [...missionState.matchCards.top, ...missionState.matchCards.bottom];
+          firstCard = allMatchCards.find(c => c.id === firstId);
+          secondCard = allMatchCards.find(c => c.id === secondId);
+        }
 
         const isMatch = isSNAP 
           ? (firstCard.matchId === secondCard.matchId && firstCard.type === secondCard.type)
@@ -128,10 +193,10 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
     const mission3Ids = shuffledMatchIds.slice(0, 4);
     const mission4Ids = shuffledMatchIds.slice(4, 8);
     
-    setMission1({ cards: createSnapCards(mission1Ids), flipped: [], matched: [], complete: false });
-    setMission2({ cards: createSnapCards(mission2Ids), flipped: [], matched: [], complete: false });
-    setMission3({ cards: createMatchCards(mission3Ids), flipped: [], matched: [], complete: false });
-    setMission4({ cards: createMatchCards(mission4Ids), flipped: [], matched: [], complete: false });
+    setMission1({ snapCards: createSnapCards(mission1Ids), flipped: [], matched: [], complete: false });
+    setMission2({ snapCards: createSnapCards(mission2Ids), flipped: [], matched: [], complete: false });
+    setMission3({ matchCards: createMatchCards(mission3Ids), flipped: [], matched: [], complete: false });
+    setMission4({ matchCards: createMatchCards(mission4Ids), flipped: [], matched: [], complete: false });
     setAllComplete(false);
     setAttempts(0);
     setFeedback({ show: false });
@@ -141,44 +206,83 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
 
   const totalMatches = mission1.matched.length + mission2.matched.length + mission3.matched.length + mission4.matched.length;
 
-  const MissionCard = ({ card, missionState, onCardClick, disabled }) => (
-    <div className="w-full aspect-square">
-      <GameCard
-        card={card}
-        isFlipped={missionState.flipped.includes(card.id) || missionState.matched.some(p => p.includes(card.id))}
-        isMatched={missionState.matched.some(p => p.includes(card.id))}
-        onClick={() => onCardClick(card.id)}
-        disabled={disabled}
-      />
+  const MissionCard = ({ card, missionState, onCardClick, disabled }) => {
+    const isFlipped = missionState.flipped.includes(card.id) || missionState.matched.some(p => p.includes(card.id));
+    const isMatched = missionState.matched.some(p => p.includes(card.id));
+    
+    return (
+      <div className="w-full aspect-square h-full">
+        <GameCard
+          card={card}
+          isFlipped={isFlipped}
+          isMatched={isMatched}
+          onClick={() => onCardClick(card.id)}
+          disabled={disabled || isMatched}
+        />
+      </div>
+    );
+  };
+
+  const renderSnapMission = (title, missionState, setMissionState, missionId, expectedPairs, isLocked) => (
+    <div className={`relative bg-white rounded-xl p-8 shadow-lg border-4 border-purple-300 min-h-96 ${isLocked ? 'opacity-50 pointer-events-none' : ''}`}>
+      {isLocked && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-xl z-30">
+          <div className="bg-gray-700 text-white px-6 py-3 rounded-lg font-bold text-lg">🔒 Complete Mission 1 First</div>
+        </div>
+      )}
+      <h3 className="text-2xl font-bold text-purple-600 mb-2">{title}</h3>
+      <p className="text-lg text-gray-700 mb-6 font-semibold">Match the 4 jobs on top with the 4 on bottom!</p>
+      
+      <div className="flex-1 flex flex-col justify-between">
+        <div className="grid grid-cols-4 gap-4 mb-8 pb-8 border-b-4 border-purple-200">
+          {missionState.snapCards.top.map(card => (
+            <MissionCard key={card.id} card={card} missionState={missionState} onCardClick={(id) => handleMissionCardClick(id, missionState, setMissionState, missionId, expectedPairs, true)} disabled={isChecking} />
+          ))}
+        </div>
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          {missionState.snapCards.bottom.map(card => (
+            <MissionCard key={card.id} card={card} missionState={missionState} onCardClick={(id) => handleMissionCardClick(id, missionState, setMissionState, missionId, expectedPairs, true)} disabled={isChecking} />
+          ))}
+        </div>
+
+        {missionState.complete && (
+          <div className="p-3 bg-green-100 rounded-lg text-center border-2 border-green-400 mt-auto">
+            <p className="text-green-700 font-bold text-lg">✅ Mission Complete!</p>
+          </div>
+        )}
+      </div>
+
+      {celebration.show && celebration.missionId === missionId && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl z-20">
+          <div className="bg-yellow-300 rounded-full px-4 py-2 shadow-2xl animate-bounce">
+            <p className="text-lg font-bold text-purple-700">{celebration.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 
-  const renderMission = (title, missionState, setMissionState, missionId, expectedPairs, isSNAP) => (
-    <div className="relative bg-white rounded-xl p-8 shadow-lg border-4 border-purple-300 min-h-96">
+  const renderMatchMission = (title, missionState, setMissionState, missionId, expectedPairs, isLocked) => (
+    <div className={`relative bg-white rounded-xl p-8 shadow-lg border-4 border-purple-300 min-h-96 ${isLocked ? 'opacity-50 pointer-events-none' : ''}`}>
+      {isLocked && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-xl z-30">
+          <div className="bg-gray-700 text-white px-6 py-3 rounded-lg font-bold text-lg">🔒 Mission is locked</div>
+        </div>
+      )}
       <h3 className="text-2xl font-bold text-purple-600 mb-2">{title}</h3>
-      <p className="text-lg text-gray-700 mb-6 font-semibold">{isSNAP ? 'Match the 4 jobs on top with the 4 on bottom!' : 'Match the tools to the jobs!'}</p>
+      <p className="text-lg text-gray-700 mb-6 font-semibold">Match the tools to the jobs!</p>
       
       <div className="flex-1 flex flex-col justify-between">
-        {isSNAP ? (
-          <>
-            <div className="grid grid-cols-4 gap-4 mb-8 pb-8 border-b-4 border-purple-200">
-              {missionState.cards.slice(0, 4).map(card => (
-                <MissionCard key={card.id} card={card} missionState={missionState} onCardClick={(id) => handleMissionCardClick(id, missionState, setMissionState, missionId, expectedPairs, true)} disabled={isChecking} />
-              ))}
-            </div>
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              {missionState.cards.slice(4, 8).map(card => (
-                <MissionCard key={card.id} card={card} missionState={missionState} onCardClick={(id) => handleMissionCardClick(id, missionState, setMissionState, missionId, expectedPairs, true)} disabled={isChecking} />
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            {missionState.cards.map(card => (
-              <MissionCard key={card.id} card={card} missionState={missionState} onCardClick={(id) => handleMissionCardClick(id, missionState, setMissionState, missionId, expectedPairs, false)} disabled={isChecking} />
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-4 gap-4 mb-8 pb-8 border-b-4 border-purple-200">
+          {missionState.matchCards.top.map(card => (
+            <MissionCard key={card.id} card={card} missionState={missionState} onCardClick={(id) => handleMissionCardClick(id, missionState, setMissionState, missionId, expectedPairs, false)} disabled={isChecking} />
+          ))}
+        </div>
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          {missionState.matchCards.bottom.map(card => (
+            <MissionCard key={card.id} card={card} missionState={missionState} onCardClick={(id) => handleMissionCardClick(id, missionState, setMissionState, missionId, expectedPairs, false)} disabled={isChecking} />
+          ))}
+        </div>
 
         {missionState.complete && (
           <div className="p-3 bg-green-100 rounded-lg text-center border-2 border-green-400 mt-auto">
@@ -199,6 +303,21 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
 
   return (
     <div className="w-full bg-gradient-to-br from-purple-100 to-blue-100 min-h-screen p-8">
+      {!imagesLoaded && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl shadow-2xl text-center p-16 max-w-md">
+            <div className="text-6xl mb-6 animate-spin">⚙️</div>
+            <h2 className="text-3xl font-bold text-purple-700 mb-4">Loading Game...</h2>
+            <p className="text-lg text-gray-600">Preparing all images for fast gameplay 🎮</p>
+            <div className="mt-6 flex gap-2 justify-center">
+              <div className="w-3 h-3 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+              <div className="w-3 h-3 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-3 h-3 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
         <h1 className="text-5xl font-bold text-center mb-2 text-purple-700">🎮 Game Missions</h1>
         <p className="text-center text-xl text-gray-700 font-semibold mb-8">Complete all 4 missions to finish the game!</p>
@@ -206,10 +325,10 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
         <GameStats matchedPairs={totalMatches} totalPairs={16} attempts={attempts} />
 
         <div className="grid grid-cols-2 gap-10 mb-8">
-          {renderMission('Mission 1: SNAP - Match the Jobs', mission1, setMission1, 'mission1', 4, true)}
-          {renderMission('Mission 2: SNAP - Match the Jobs', mission2, setMission2, 'mission2', 4, true)}
-          {renderMission('Mission 3: MATCH IT - Tools to Jobs', mission3, setMission3, 'mission3', 4, false)}
-          {renderMission('Mission 4: MATCH IT - Tools to Jobs', mission4, setMission4, 'mission4', 4, false)}
+          {renderSnapMission('Mission 1: SNAP - Match the Jobs', mission1, setMission1, 'mission1', 4, false)}
+          {renderSnapMission('Mission 2: SNAP - Match the Jobs', mission2, setMission2, 'mission2', 4, !mission1.complete)}
+          {renderMatchMission('Mission 3: MATCH IT - Tools to Jobs', mission3, setMission3, 'mission3', 4, !mission2.complete)}
+          {renderMatchMission('Mission 4: MATCH IT - Tools to Jobs', mission4, setMission4, 'mission4', 4, !mission3.complete)}
         </div>
       </div>
 
@@ -245,8 +364,8 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
 
       {feedback.show && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className="bg-red-500 text-white rounded-xl shadow-2xl text-center px-8 py-8 max-w-md animate-bounce">
-            <p className="text-3xl font-bold">You are close but try again!</p>
+          <div className="bg-red-500 text-white rounded-xl shadow-2xl text-center px-6 py-4 max-w-sm animate-bounce">
+            <p className="text-lg font-bold">You are close but try again!</p>
           </div>
         </div>
       )}
