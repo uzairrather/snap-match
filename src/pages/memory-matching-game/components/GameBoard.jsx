@@ -218,7 +218,7 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
         </div>
       )}
       <h3 className="text-base md:text-lg font-bold text-purple-600 mb-0.5">{title}</h3>
-      <p className="text-xs md:text-sm text-gray-700 mb-2 font-semibold">Match the 4 jobs on top with the 4 on bottom!</p>
+      <p className="text-xs md:text-sm text-gray-700 mb-2 font-semibold">Find and match the pairs that belong together!</p>
       
       <div className="flex flex-col gap-1">
         <div className="grid grid-cols-4 gap-1 pb-1 border-b-2 border-purple-200">
@@ -257,7 +257,7 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
         </div>
       )}
       <h3 className="text-base md:text-lg font-bold text-purple-600 mb-0.5">{title}</h3>
-      <p className="text-xs md:text-sm text-gray-700 mb-2 font-semibold">Match the tools to the jobs!</p>
+      <p className="text-xs md:text-sm text-gray-700 mb-2 font-semibold">Find and match the pairs that belong together!</p>
       
       <div className="flex flex-col gap-1">
         <div className="grid grid-cols-4 gap-1 pb-1 border-b-2 border-purple-200">
