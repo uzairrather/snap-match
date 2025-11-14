@@ -218,7 +218,7 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
         </div>
       )}
       <h3 className="text-base md:text-lg font-bold text-purple-600 mb-0.5">{title}</h3>
-      <p className="text-xs md:text-sm text-gray-700 mb-2 font-semibold">Find and match the pairs that belong together!</p>
+      <p className="text-xs md:text-sm text-gray-700 mb-2 font-semibold">Match the 4 jobs on top with the 4 on bottom!</p>
       
       <div className="flex flex-col gap-1">
         <div className="grid grid-cols-4 gap-1 pb-1 border-b-2 border-purple-200">
@@ -257,7 +257,7 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
         </div>
       )}
       <h3 className="text-base md:text-lg font-bold text-purple-600 mb-0.5">{title}</h3>
-      <p className="text-xs md:text-sm text-gray-700 mb-2 font-semibold">Find and match the pairs that belong together!</p>
+      <p className="text-xs md:text-sm text-gray-700 mb-2 font-semibold">Match the tools to the jobs!</p>
       
       <div className="flex flex-col gap-1">
         <div className="grid grid-cols-4 gap-1 pb-1 border-b-2 border-purple-200">
@@ -330,8 +330,26 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
           <div className="bg-gradient-to-b from-yellow-300 to-yellow-100 rounded-3xl shadow-2xl text-center p-4 md:p-8 max-w-2xl w-full relative z-10 animate-bounce border-4 border-purple-600 mx-4">
             <div className="text-5xl md:text-6xl mb-2 md:mb-4 animate-spin" style={{ animationDuration: '3s' }}>🎉</div>
             <h2 className="text-2xl md:text-4xl font-bold text-purple-700 mb-1 md:mb-2">🏆 Congratulations! 🏆</h2>
-            <p className="text-base md:text-xl text-purple-600 mb-1 font-bold">You completed all 4 missions!</p>
-            <p className="text-sm md:text-base text-gray-700 mb-4 md:mb-6">Amazing work! You matched all the jobs and tools perfectly! 🌟</p>
+            <p className="text-base md:text-xl text-purple-600 mb-2 md:mb-3 font-bold">You completed all 4 missions!</p>
+            <p className="text-sm md:text-base text-gray-700 mb-3 md:mb-4">Amazing work! You matched all the jobs and tools perfectly! 🌟</p>
+            
+            <div className="bg-white rounded-xl p-3 md:p-4 mb-3 md:mb-4 border-2 border-purple-300">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-purple-50 rounded-lg p-2">
+                  <p className="text-xs md:text-sm font-bold text-purple-700">Total Matches</p>
+                  <p className="text-lg md:text-2xl font-bold text-purple-600">{totalMatches}</p>
+                </div>
+                <div className="bg-blue-50 rounded-lg p-2">
+                  <p className="text-xs md:text-sm font-bold text-blue-700">Attempts</p>
+                  <p className="text-lg md:text-2xl font-bold text-blue-600">{attempts}</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-2">
+                  <p className="text-xs md:text-sm font-bold text-green-700">Accuracy</p>
+                  <p className="text-lg md:text-2xl font-bold text-green-600">{attempts > 0 ? Math.round((totalMatches * 100) / attempts) : 0}%</p>
+                </div>
+              </div>
+            </div>
+            
             <button onClick={resetAllGames} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1.5 md:py-3 px-4 md:px-6 rounded-xl text-sm md:text-lg transition-all duration-200 transform hover:scale-105">🎮 Play Again</button>
           </div>
 
