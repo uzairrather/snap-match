@@ -92,6 +92,9 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
   const [allComplete, setAllComplete] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  
+  // ✅ NEW: Track game start time for calculating time spent
+  const [gameStartTime] = useState(Date.now());
 
   // Preload images and track loading
   useEffect(() => {
@@ -163,9 +166,55 @@ const GameBoard = ({ onGameComplete, onRestart, onCardFlip, onMatch }) => {
     }
   };
 
+  // ✅ NEW: Function to send score to WonderLeap
+  const sendScoreToWonderLeap = () => {
+    // Calculate time spent in seconds
+    const timeSpent = Math.floor((Date.now() - gameStartTime) / 1000);
+    
+    // Calculate score based on performance
+    const totalMatches = 16; // 4 missions × 4 matches each
+    const accuracy = attempts > 0 ? Math.round((totalMatches * 100) / attempts) : 100;
+    
+    // Calculate stars (1-3 based on accuracy)
+    let stars = 1;
+    if (accuracy >= 90) stars = 3;
+    else if (accuracy >= 70) stars = 2;
+    
+    // Final score (0-100)
+    const finalScore = accuracy;
+    
+    // Send message to parent window (WonderLeap)
+    const message = {
+      type: 'GAME_COMPLETE',
+      score: finalScore,
+      stars: stars,
+      timeSpent: timeSpent,
+      attempts: attempts,
+      matches: totalMatches,
+      accuracy: accuracy,
+      completed: true
+    };
+    
+    console.log('🎮 Sending score to WonderLeap:', message);
+    
+    // Send to WonderLeap (parent window)
+    window.parent.postMessage(message, 'http://localhost:5173');
+    
+    // Also try production URL if in production
+    if (window.location.hostname !== 'localhost') {
+      window.parent.postMessage(message, 'https://wonderleap.vercel.app');
+    }
+  };
+
+  // ✅ MODIFIED: Trigger score sending when all missions complete
   React.useEffect(() => {
     if (mission1.complete && mission2.complete && mission3.complete && mission4.complete) {
       setAllComplete(true);
+      
+      // ✅ NEW: Send score to WonderLeap after 1 second delay
+      setTimeout(() => {
+        sendScoreToWonderLeap();
+      }, 1000);
     }
   }, [mission1.complete, mission2.complete, mission3.complete, mission4.complete]);
 
